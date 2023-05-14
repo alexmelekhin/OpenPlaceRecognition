@@ -272,3 +272,148 @@ class MinkResNetFPNExtractor(MinkResNetBase):
             x = x + self.conv1x1[ndx + 1](feature_maps[-ndx - 1])
 
         return x
+
+
+
+class MinkResNetFPNExtractorOneHotSemantic(MinkResNetBase):
+    """Feature Pyramid Network (FPN) architecture implementation using Minkowski ResNet building blocks."""
+
+    sparse: bool = True
+
+    def __init__(
+        self,
+        in_channels: int = 1,
+        out_channels: int = 256,
+        num_top_down: int = 2,
+        conv0_kernel_size: int = 5,
+        block: str = "ECABasicBlock",
+        layers: Tuple[int, ...] = (1, 1, 1, 1),
+        planes: Tuple[int, ...] = (64, 128, 64, 32),
+    ) -> None:
+        """Feature Pyramid Network (FPN) architecture implementation using Minkowski ResNet building blocks.
+
+        Args:
+            in_channels (int): Number of input channels. Defaults to 1.
+            out_channels (int): Number of output channels. Defaults to 256.
+            num_top_down (int): Number of top-down steps for FPN block. Defaults to 2.
+            conv0_kernel_size (int): Kernel size of the first convolution. Defaults to 5.
+            block (str): Block type name. Defaults to "ECABasicBlock".
+            layers (Tuple[int, ...]): Number of layers for each block. Defaults to (1, 1, 1, 1).
+            planes (Tuple[int, ...]): Output channel size for each block. Defaults to (64, 128, 64, 32).
+        """
+        assert len(layers) == len(planes)
+        assert 1 <= len(layers)
+        assert 0 <= num_top_down <= len(layers)
+        self.num_bottom_up = len(layers)
+        self.num_top_down = num_top_down
+        self.conv0_kernel_size = conv0_kernel_size
+        self.block = self._create_resnet_block(block_name=block)
+        self.layers = layers
+        self.planes = planes
+        self.lateral_dim = out_channels
+        self.init_dim = planes[0]
+        MinkResNetBase.__init__(self, in_channels, out_channels, dimension=3)
+
+    def _create_resnet_block(
+        self, block_name: str
+    ) -> Union[Type[BasicBlock], Type[Bottleneck], Type[ECABasicBlock]]:
+        if block_name == "BasicBlock":
+            block_module = BasicBlock
+        elif block_name == "Bottleneck":
+            block_module = Bottleneck
+        elif block_name == "ECABasicBlock":
+            block_module = ECABasicBlock
+        else:
+            raise NotImplementedError(f"Unsupported network block: {block_name}")
+
+        return block_module
+
+    def _network_initialization(self, in_channels: int, out_channels: int, dimension: int) -> None:
+        assert len(self.layers) == len(self.planes)
+        assert len(self.planes) == self.num_bottom_up
+
+        self.convs = nn.ModuleList()  # Bottom-up convolutional blocks with stride=2
+        self.bn = nn.ModuleList()  # Bottom-up BatchNorms
+        self.blocks = nn.ModuleList()  # Bottom-up blocks
+        self.tconvs = nn.ModuleList()  # Top-down tranposed convolutions
+        self.conv1x1 = nn.ModuleList()  # 1x1 convolutions in lateral connections
+
+        # The first convolution is special case, with kernel size = 5
+        self.inplanes = self.planes[0]
+        self.conv0 = ME.MinkowskiConvolution(
+            in_channels, self.inplanes, kernel_size=self.conv0_kernel_size, dimension=dimension
+        )
+        self.bn0 = ME.MinkowskiBatchNorm(self.inplanes)
+
+        for plane, layer in zip(self.planes, self.layers):
+            self.convs.append(
+                ME.MinkowskiConvolution(
+                    self.inplanes, self.inplanes, kernel_size=2, stride=2, dimension=dimension
+                )
+            )
+            self.bn.append(ME.MinkowskiBatchNorm(self.inplanes))
+            self.blocks.append(self._make_layer(self.block, plane, layer))
+
+        # Lateral connections
+        for i in range(self.num_top_down):
+            self.conv1x1.append(
+                ME.MinkowskiConvolution(
+                    self.planes[-1 - i], self.lateral_dim, kernel_size=1, stride=1, dimension=dimension
+                )
+            )
+            self.tconvs.append(
+                ME.MinkowskiConvolutionTranspose(
+                    self.lateral_dim, self.lateral_dim, kernel_size=2, stride=2, dimension=dimension
+                )
+            )
+        # There's one more lateral connection than top-down TConv blocks
+        if self.num_top_down < self.num_bottom_up:
+            # Lateral connection from Conv block 1 or above
+            self.conv1x1.append(
+                ME.MinkowskiConvolution(
+                    self.planes[-1 - self.num_top_down],
+                    self.lateral_dim,
+                    kernel_size=1,
+                    stride=1,
+                    dimension=dimension,
+                )
+            )
+        else:
+            # Lateral connection from Con0 block
+            self.conv1x1.append(
+                ME.MinkowskiConvolution(
+                    self.planes[0], self.lateral_dim, kernel_size=1, stride=1, dimension=dimension
+                )
+            )
+
+        self.relu = ME.MinkowskiReLU(inplace=True)
+
+    def forward(self, x: ME.SparseTensor) -> ME.SparseTensor:  # noqa: D102
+        # *** BOTTOM-UP PASS ***
+        # First bottom-up convolution is special (with bigger kernel)
+        feature_maps = []
+        x = self.conv0(x)
+        x = self.bn0(x)
+        x = self.relu(x)
+        if self.num_top_down == self.num_bottom_up:
+            feature_maps.append(x)
+
+        # BOTTOM-UP PASS
+        for ndx, (conv, bn, block) in enumerate(zip(self.convs, self.bn, self.blocks)):
+            x = conv(x)  # Downsample (conv stride=2 with 2x2x2 kernel)
+            x = bn(x)
+            x = self.relu(x)
+            x = block(x)
+            if self.num_bottom_up - 1 - self.num_top_down <= ndx < len(self.convs) - 1:
+                feature_maps.append(x)
+
+        assert len(feature_maps) == self.num_top_down
+
+        x = self.conv1x1[0](x)
+
+        # TOP-DOWN PASS
+        for ndx, tconv in enumerate(self.tconvs):
+            x = tconv(x)  # Upsample using transposed convolution
+            x = x + self.conv1x1[ndx + 1](feature_maps[-ndx - 1])
+
+        return x

@@ -236,7 +236,6 @@ class OneHotSemanticTransform:
         """
         return self.transform(image=img)["image"]
 
-
 class DefaultCloudTransform:
     """Default point cloud augmentation pipeline."""
 

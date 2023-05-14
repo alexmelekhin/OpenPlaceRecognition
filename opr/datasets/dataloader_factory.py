@@ -67,6 +67,10 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
 
         if "semantic" in data_list[0]:
             semantics = [e["semantic"] for e in data_list]
+        
+        if "semantic_mk" in data_list[0]:
+            semantics_mk = [e["semantic_mk"] for e in data_list]
+            semantic_coords = [e.to_sparse().indices().T for e in semantics_mk]
                   
         if "range_image" in data_list[0]:
             range_images = [e["range_image"] for e in data_list]
@@ -92,6 +96,10 @@ def make_collate_fn(dataset: BaseDataset, batch_split_size: Optional[int] = None
 
             if "semantic" in data_list[0]:
                 result["semantics"] = torch.stack(semantics, dim=0)
+            if "semantic_mk" in data_list[0]:
+                # raise Exception(f"<--- D: {semantic_coords[0].shape} --->")
+                result["sem_coordinates"] = ME.utils.batched_coordinates(semantic_coords)
+                result["sem_features"] = torch.ones((result["sem_coordinates"].shape[0], 1), dtype=torch.float32)
             if "range_image" in data_list[0]:
                 result["range_images"] = torch.stack(range_images, dim=0)
             result["utms"] = utms

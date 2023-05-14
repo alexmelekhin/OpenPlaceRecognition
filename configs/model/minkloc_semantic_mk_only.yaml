@@ -1,0 +1,18 @@
+_target_: opr.models.base_models.ComposedModel
+
+semantic_mk_module:
+  _target_: opr.models.base_models.CloudModule
+
+  backbone:
+    _target_: opr.models.minkloc.MinkResNetFPNExtractorOneHotSemantic
+    out_channels: 128
+    num_top_down: 1
+    conv0_kernel_size: 5
+    block: ECABasicBlock
+    layers: [1, 1, 1]
+    planes: [32, 64, 64]
+
+  head:
+    _target_: opr.models.layers.gem.MinkGeM
+    p: 3
+    eps: 0.000001

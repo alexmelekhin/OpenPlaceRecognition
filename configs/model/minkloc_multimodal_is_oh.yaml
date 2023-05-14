@@ -1,0 +1,34 @@
+_target_: opr.models.base_models.ComposedModel
+
+image_module:
+  _target_: opr.models.base_models.ImageModule
+
+  backbone:
+    _target_: opr.models.resnet.ResNet18FPNExtractor
+    lateral_dim: 128
+    fh_num_bottom_up: 4
+    fh_num_top_down: 0
+    pretrained: True
+
+  head:
+    _target_: opr.models.layers.gem.GeM
+    p: 3
+    eps: 0.000001
+
+semantic_module:
+  _target_: opr.models.base_models.ImageModule
+
+  backbone:
+    _target_: opr.models.resnet.ResNet18FPNExtractorOneHot
+    lateral_dim: 128
+    fh_num_bottom_up: 4
+    fh_num_top_down: 0
+    pretrained: False
+
+  head:
+    _target_: opr.models.layers.gem.GeM
+    p: 3
+    eps: 0.000001
+
+fusion_module:
+  _target_: opr.models.fusion.Concat

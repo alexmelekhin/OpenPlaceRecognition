@@ -141,6 +141,7 @@ class ComposedModel(nn.Module):
         self,
         image_module: Optional[Union[ImageModule, MultiImageModule]] = None,
         semantic_module: Optional[ImageModule] = None,
+        semantic_mk_module: Optional[CloudModule] = None,
         cloud_module: Optional[CloudModule] = None,
         fusion_module: Optional[FusionModule] = None,
     ) -> None:
@@ -149,6 +150,7 @@ class ComposedModel(nn.Module):
         Args:
             image_module (ImageModule, optional): Image modality branch. Defaults to None.
             semantic_module (ImageModule, optional): Semantic modality branch. Defaults to None.
+            semantic_module (CloudModule, optional): Minkovski semantic modality branch. Defaults to None.
             cloud_module (CloudModule, optional): Cloud modality branch. Defaults to None.
             fusion_module (FusionModule, optional): Module to fuse different modalities. Defaults to None.
         """
@@ -156,6 +158,7 @@ class ComposedModel(nn.Module):
 
         self.image_module = image_module
         self.semantic_module = semantic_module
+        self.semantic_mk_module = semantic_mk_module
         self.cloud_module = cloud_module
         self.fusion_module = fusion_module
 
@@ -169,6 +172,10 @@ class ComposedModel(nn.Module):
 
         if self.semantic_module is not None and isinstance(self.semantic_module, ImageModule):
             out_dict["semantic"] = self.semantic_module(batch["semantics"])
+
+        if self.semantic_mk_module is not None and isinstance(self.semantic_mk_module, CloudModule):
+            mk_semantic_data = ME.SparseTensor(features=batch["sem_features"], coordinates=batch["sem_coordinates"])
+            out_dict["semantic_mk"] = self.semantic_mk_module(mk_semantic_data)
 
         if self.cloud_module is not None:
             cloud = ME.SparseTensor(features=batch["features"], coordinates=batch["coordinates"])

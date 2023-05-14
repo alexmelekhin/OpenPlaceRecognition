@@ -1,6 +1,7 @@
 learning_rates:
   image_lr: 0.0001
   semantic_lr: 0.0001
+  semantic_mk_lr: 0.0001
   cloud_lr: 0.001
   fusion_lr: 0.001
 

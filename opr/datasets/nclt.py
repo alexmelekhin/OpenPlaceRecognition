@@ -64,6 +64,14 @@ class NCLTDataset(BaseDataset):
                 raise ValueError(
                     "Given 'semantic' in 'modalities' argument, but 'semantic_subdir' is set to None"
                 )
+        
+        if "semantic_mk" in self.modalities:
+            if semantic_subdir:
+                self.semantic_subdir = Path(semantic_subdir)
+            else:
+                raise ValueError(
+                    "Given 'semantic_mk' in 'modalities' argument, but 'semantic_subdir' is set to None"
+                )
 
         if "cloud" in self.modalities:
             self.clouds_subdir = Path("velodyne_data")
@@ -73,6 +81,7 @@ class NCLTDataset(BaseDataset):
 
         self.image_transform = DefaultImageTransform(train=(self.subset == "train"))
         self.semantic_transform = DefaultSemanticTransform(train=(self.subset == "train"))
+        self.semantic_mk_transform = OneHotSemanticTransform(train=(self.subset == "train"))
         self.cloud_transform = DefaultCloudTransform(train=(self.subset == "train"))
         self.cloud_set_transform = DefaultCloudSetTransform(train=(self.subset == "train"))
 
@@ -103,6 +112,13 @@ class NCLTDataset(BaseDataset):
             # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
             im = self.semantic_transform(im)
             data["semantic"] = im
+        
+        if "semantic_mk" in self.modalities and self.semantic_subdir is not None:
+            im_filepath = track_dir / self.semantic_subdir / f"{row['image']}.png"
+            im = cv2.imread(str(im_filepath), cv2.IMREAD_UNCHANGED)
+            im = self.semantic_mk_transform(im)
+            data["semantic_mk"] = im
+
         if "cloud" in self.modalities and self.clouds_subdir is not None:
             pc_filepath = track_dir / self.clouds_subdir / f"{row['pointcloud']}.bin"
             pc = self._load_pc(pc_filepath)

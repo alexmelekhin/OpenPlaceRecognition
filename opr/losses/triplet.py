@@ -20,7 +20,7 @@ class MultimodalTripletMarginLoss(nn.Module):
     Code adopted from repository: https://github.com/jac99/MinkLocMultimodal, MIT License
     """
 
-    valid_modalities = ("image", "cloud", "semantic", "fusion")
+    valid_modalities = ("image", "cloud", "semantic", "semantic_mk", "fusion")
 
     def __init__(
         self,
@@ -30,7 +30,7 @@ class MultimodalTripletMarginLoss(nn.Module):
         reducer: Union[AvgNonZeroReducer, MeanReducer, SumReducer],
         swap: bool = False,
         modalities: Union[
-            Literal["image", "cloud", "semantic", "fusion"], Sequence[Literal["image", "cloud", "semantic", "fusion"]]
+            Literal["image", "cloud", "semantic", "semantic_mk", "fusion"], Sequence[Literal["image", "cloud", "semantic", "semantic_mk", "fusion"]]
         ] = ("image",),
         weights: Union[float, Sequence[float]] = 1.0,
     ) -> None:

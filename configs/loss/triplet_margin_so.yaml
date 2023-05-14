@@ -15,5 +15,5 @@ miner:
 reducer:
   _target_: pytorch_metric_learning.reducers.AvgNonZeroReducer
   collect_stats: True
-modalities: [semantic]
+modalities: [semantic_mk]
 weights: [1.]

@@ -58,7 +58,9 @@ def train(cfg: DictConfig):
 
     print("=> Instantiating optimizer...")
     params_list = []
-    modalities = list(set([m.split("_")[0] for m in cfg.general.modalities]))
+    # modalities = list(set([m.split("_")[0] for m in cfg.general.modalities]))
+    modalities = list(cfg.general.modalities)
+    
     for modality in modalities:
         params_list.append(
             {
