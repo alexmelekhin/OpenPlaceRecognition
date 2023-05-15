@@ -1,1 +1,1 @@
-from .triplet import MultimodalTripletMarginLoss
+from .triplet import MultimodalTripletMarginLoss, MultimodalTripletMarginLossDist

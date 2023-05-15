@@ -1,8 +1,8 @@
 defaults:
   - _self_
   - model: minkloc_multimodal
-  - dataset: oxford
-  - loss: triplet_margin
+  - dataset: nclt
+  - loss: triplet_margin_dist
   - optimizer: adam
   - scheduler: multi_step
   - general: multimodal

@@ -1,0 +1,36 @@
+_target_: opr.losses.MultimodalTripletMarginLossDist
+
+margin: 0.2
+swap: True
+distance:
+  _target_: pytorch_metric_learning.distances.LpDistance
+  normalize_embeddings: False
+  collect_stats: True
+miner:
+  _target_: opr.miners.MinersHolder
+  modalities: ${loss.modalities}
+
+  image_miner:
+    _target_: opr.miners.HardTripletMinerDist
+    distance:
+      _target_: pytorch_metric_learning.distances.LpDistance
+      normalize_embeddings: False
+  
+  cloud_miner:
+    _target_: opr.miners.HardTripletMinerDist
+    distance:
+      _target_: pytorch_metric_learning.distances.LpDistance
+      normalize_embeddings: False
+
+  fusion_miner:
+    _target_: opr.miners.HardTripletMinerDist
+    distance:
+      _target_: pytorch_metric_learning.distances.LpDistance
+      normalize_embeddings: False
+
+reducer:
+  _target_: pytorch_metric_learning.reducers.AvgNonZeroReducer
+  collect_stats: True
+modalities: [image, cloud, fusion]
+weights: [0.5, 0.5, 0.]
+distributed: False

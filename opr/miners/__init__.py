@@ -1,1 +1,1 @@
-from .hard_triplet_miner import HardTripletMiner
+from .hard_triplet_miner import HardTripletMiner, HardTripletMinerDist, MinersHolder
