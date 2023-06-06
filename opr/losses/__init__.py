@@ -1,1 +1,2 @@
 from .triplet import MultimodalTripletMarginLoss
+from .contrastive import MultimodalContrastiveLoss

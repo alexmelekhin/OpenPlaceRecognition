@@ -1,0 +1,18 @@
+_target_: src.losses.contrastive.MultimodalContrastiveLoss
+
+pos_margin: 0.0
+neg_margin: 0.4
+distance:
+  _target_: pytorch_metric_learning.distances.LpDistance
+  normalize_embeddings: False
+  collect_stats: True
+miner:
+  _target_: src.miners.all_pairs_miner.AllPairsMiner
+  distance:
+    _target_: pytorch_metric_learning.distances.LpDistance
+    normalize_embeddings: False
+reducer:
+  _target_: pytorch_metric_learning.reducers.AvgNonZeroReducer
+  collect_stats: True
+modalities: [image, cloud, fusion]
+weights: [0.5, 0.5, 0.0]

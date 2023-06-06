@@ -2,12 +2,12 @@ defaults:
   - _self_
   - model: minkloc_multimodal
   - dataset: nclt_multimodal
-  - loss: triplet_margin_multimodal
+  - loss: contrastive_multimodal
   - optimizer: adam
   - scheduler: multi_step
   - general: multimodal
 
 wandb:
   disabled: False
-  project: OpenPlaceRecognition
+  project: OpenPlaceRecognition_test
   run_name: null

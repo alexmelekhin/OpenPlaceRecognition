@@ -1,6 +1,6 @@
 dataset:
   _target_: opr.datasets.nclt.NCLTDataset
-  dataset_root: /datasets/NCLT_preprocessed
+  dataset_root: /home/docker_opr/Datasets/NCLT_preprocessed
   modalities: ${general.modalities}
   images_subdir: lb3_small/Cam5
   semantic_subdir: lb3_segmentation_small/Cam5
