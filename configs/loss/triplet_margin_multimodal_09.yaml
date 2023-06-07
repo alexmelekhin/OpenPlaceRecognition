@@ -1,0 +1,19 @@
+_target_: opr.losses.MultimodalTripletMarginLoss
+
+margin: 0.9
+swap: True
+distance:
+  _target_: pytorch_metric_learning.distances.LpDistance
+  normalize_embeddings: False
+  collect_stats: True
+miner:
+  _target_: opr.miners.HardTripletMiner
+  distance:
+    _target_: pytorch_metric_learning.distances.LpDistance
+    normalize_embeddings: False
+  modalities: ${loss.modalities}
+reducer:
+  _target_: pytorch_metric_learning.reducers.AvgNonZeroReducer
+  collect_stats: True
+modalities: [image, semantic, text, fusion]
+weights: [0.33, 0.33, 0.33, 0.01]
